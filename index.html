@@ -30,7 +30,7 @@ button:hover{transform:translateY(-3px) scale(1.05);box-shadow:0 10px 25px rgba(
 .weather-card:hover{transform:scale(1.05) translateY(-5px);box-shadow:0 15px 40px rgba(255,255,255,0.4);}
 .weather-card h2{margin-bottom:15px;font-size:1.8em;text-shadow:2px 2px 8px rgba(0,0,0,0.5);}
 .weather-item{margin:10px 0;font-size:1.1em;}
-.icon{font-size:2em;margin-right:10px;display:inline-block;animation:float 2s ease-in-out infinite;}
+.icon{display:none;}
 @keyframes float{0%{transform:translateY(0);}50%{transform:translateY(-5px);}100%{transform:translateY(0);}}
 @media(max-width:800px){.weather-card{width:90%;margin:15px 0;}}
 </style>
@@ -52,14 +52,14 @@ button:hover{transform:translateY(-3px) scale(1.05);box-shadow:0 10px 25px rgba(
 
 <script>
 var codeMap = [
-  {codes:[0], type:"Clear Sky", icon:"☀️"},
-  {codes:[1,2], type:"Partly Cloudy", icon:"🌤️"},
-  {codes:[3], type:"Cloudy", icon:"☁️"},
-  {codes:[45,48], type:"Fog", icon:"🌫️"},
-  {codes:[51,53,55,61,63,65,80,81,82], type:"Rain", icon:"🌧️"},
-  {codes:[66,67], type:"Freezing Rain", icon:"🌨️"},
-  {codes:[71,73,75], type:"Snow", icon:"❄️"},
-  {codes:[95,96,99], type:"Thunderstorm", icon:"⛈️"}
+  {codes:[0], type:"Clear Sky", icon:""},
+  {codes:[1,2], type:"Partly Cloudy", icon:""},
+  {codes:[3], type:"Cloudy", icon:""},
+  {codes:[45,48], type:"Fog", icon:""},
+  {codes:[51,53,55,61,63,65,80,81,82], type:"Rain", icon:""},
+  {codes:[66,67], type:"Freezing Rain", icon:""},
+  {codes:[71,73,75], type:"Snow", icon:""},
+  {codes:[95,96,99], type:"Thunderstorm", icon:""}
 ];
 
 var cities = ["New York,US","London,GB","Tokyo,JP","Paris,FR","Sydney,AU","Los Angeles,US","Lisbon,PT","Berlin,DE"];
@@ -115,23 +115,23 @@ function getWeather(lat, lon, locationName){
       var data=JSON.parse(xhr.responseText);
       var cards="";
       var cw=data.current_weather;
-      var cwType="Unknown", cwIcon="❓";
+      var cwType="Unknown";
       for(var i=0;i<codeMap.length;i++){
-        if(codeMap[i].codes.indexOf(cw.weathercode)!=-1){ cwType=codeMap[i].type; cwIcon=codeMap[i].icon; }
+        if(codeMap[i].codes.indexOf(cw.weathercode)!=-1){ cwType=codeMap[i].type; }
       }
       cards+="<div class='weather-card'><h2>Now"+(locationName?" - "+locationName:"")+"</h2>";
-      cards+="<div class='weather-item'><span class='icon'>"+cwIcon+"</span>Temp: "+cw.temperature+"°C</div>";
+      cards+="<div class='weather-item'>Temp: "+cw.temperature+"°C</div>";
       cards+="<div class='weather-item'>Wind: "+cw.windspeed+" km/h</div>";
       cards+="<div class='weather-item'>Weather: "+cwType+"</div></div>";
 
       var daily=data.daily;
       for(var i=0;i<3;i++){
-        var code=daily.weathercode[i], type="Unknown", icon="❓";
+        var code=daily.weathercode[i], type="Unknown";
         for(var j=0;j<codeMap.length;j++){
-          if(codeMap[j].codes.indexOf(code)!=-1){ type=codeMap[j].type; icon=codeMap[j].icon; }
+          if(codeMap[j].codes.indexOf(code)!=-1){ type=codeMap[j].type; }
         }
         cards+="<div class='weather-card'><h2>Day "+(i+1)+"</h2>";
-        cards+="<div class='weather-item'><span class='icon'>"+icon+"</span>Max: "+daily.temperature_2m_max[i]+"°C</div>";
+        cards+="<div class='weather-item'>Max: "+daily.temperature_2m_max[i]+"°C</div>";
         cards+="<div class='weather-item'>Min: "+daily.temperature_2m_min[i]+"°C</div>";
         cards+="<div class='weather-item'>Weather: "+type+"</div></div>";
       }
@@ -151,7 +151,3 @@ function getWeather(lat, lon, locationName){
 
 </body>
 </html>
-<!--
-I used AI for [some of] the CSS part; integrated JS API myself.
-API name is Open-Meteo for reference.
--->
