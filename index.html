@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WeatherWeb</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+<style>
+body {
+  font-family: 'Roboto', Verdana, sans-serif;
+  margin:0; padding:0; color:#fff; display:flex; flex-direction:column; align-items:center; min-height:100vh;
+  background: linear-gradient(135deg,#000000,#ffffff); background-size:400% 400%; animation:gradientBG 20s ease infinite; transition:0.5s;
+}
+@keyframes gradientBG {0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+
+h1{margin-top:40px;font-size:3em;letter-spacing:2px;text-shadow:2px 2px 10px rgba(0,0,0,0.5);}
+p{font-size:1.2em;margin:10px 0 30px 0;color:#ddd;text-shadow:1px 1px 3px rgba(0,0,0,0.4);}
+
+.input-container{display:flex;gap:15px;flex-wrap:wrap;justify-content:center;margin-bottom:30px; position:relative;}
+input,button{padding:12px 20px;font-size:1em;border-radius:30px;border:none;outline:none;box-shadow:0 5px 15px rgba(0,0,0,0.3);transition:0.3s all;}
+input{text-align:center;width:150px;}
+input:focus{box-shadow:0 5px 20px rgba(255,255,255,0.6);transform:scale(1.05);}
+button{cursor:pointer;background:linear-gradient(45deg,#ff6a00,#ee0979);color:#fff;font-weight:bold;box-shadow:0 5px 15px rgba(0,0,0,0.4);}
+button:hover{transform:translateY(-3px) scale(1.05);box-shadow:0 10px 25px rgba(0,0,0,0.5);background:linear-gradient(45deg,#ff8a33,#ff3299);}
+
+#suggestions{position:absolute; top:45px; background:rgba(0,0,0,0.6); border-radius:8px; max-height:120px; overflow-y:auto; width:150px; z-index:100;}
+
+.cards-container{display:flex;flex-wrap:wrap;justify-content:center;}
+.weather-card{background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);border-radius:25px;padding:30px 20px;text-align:center;width:250px;margin:20px;box-shadow:0 10px 30px rgba(0,0,0,0.5);transition:0.4s all;display:inline-block;vertical-align:top;}
+.weather-card:hover{transform:scale(1.05) translateY(-5px);box-shadow:0 15px 40px rgba(255,255,255,0.4);}
+.weather-card h2{margin-bottom:15px;font-size:1.8em;text-shadow:2px 2px 8px rgba(0,0,0,0.5);}
+.weather-item{margin:10px 0;font-size:1.1em;}
+.icon{font-size:2em;margin-right:10px;display:inline-block;animation:float 2s ease-in-out infinite;}
+@keyframes float{0%{transform:translateY(0);}50%{transform:translateY(-5px);}100%{transform:translateY(0);}}
+@media(max-width:800px){.weather-card{width:90%;margin:15px 0;}}
+</style>
+</head>
+<body>
+
+<h1>WeatherWeb</h1>
+<p>Select a city or enter latitude/longitude:</p>
+
+<div class="input-container">
+  <input type="text" id="cityInput" placeholder="City Name" onkeyup="showSuggestions()">
+  <div id="suggestions"></div>
+  <input type="number" id="lat" placeholder="Latitude" step="0.01">
+  <input type="number" id="lon" placeholder="Longitude" step="0.01">
+  <button onclick="searchWeather()">Get Weather</button>
+</div>
+
+<div class="cards-container" id="weatherInfo"></div>
+
+<script>
+var codeMap = [
+  {codes:[0], type:"Clear Sky", icon:"☀️"},
+  {codes:[1,2], type:"Partly Cloudy", icon:"🌤️"},
+  {codes:[3], type:"Cloudy", icon:"☁️"},
+  {codes:[45,48], type:"Fog", icon:"🌫️"},
+  {codes:[51,53,55,61,63,65,80,81,82], type:"Rain", icon:"🌧️"},
+  {codes:[66,67], type:"Freezing Rain", icon:"🌨️"},
+  {codes:[71,73,75], type:"Snow", icon:"❄️"},
+  {codes:[95,96,99], type:"Thunderstorm", icon:"⛈️"}
+];
+
+var cities = ["New York,US","London,GB","Tokyo,JP","Paris,FR","Sydney,AU","Los Angeles,US","Lisbon,PT","Berlin,DE"];
+
+function showSuggestions(){
+  var input = document.getElementById("cityInput").value.toLowerCase();
+  var list = "";
+  for(var i=0;i<cities.length;i++){
+    if(cities[i].toLowerCase().indexOf(input)===0 && input.length>0){
+      list += "<div style='padding:5px;cursor:pointer;' onclick='fillCity(\""+cities[i]+"\")'>"+cities[i]+"</div>";
+    }
+  }
+  document.getElementById("suggestions").innerHTML=list;
+}
+
+function fillCity(cityName){
+  document.getElementById("cityInput").value=cityName;
+  document.getElementById("suggestions").innerHTML="";
+}
+
+function searchWeather(){
+  var city = document.getElementById("cityInput").value;
+  var lat = document.getElementById("lat").value;
+  var lon = document.getElementById("lon").value;
+
+  if(city){ geocodeCity(city); }
+  else if(lat && lon){ getWeather(lat, lon, ""); }
+  else { alert("Enter a city or lat/lon"); }
+}
+
+function geocodeCity(city){
+  var xhr=new XMLHttpRequest();
+  xhr.open("GET","https://geocoding-api.open-meteo.com/v1/search?name="+city,true);
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState==4 && xhr.status==200){
+      var data=JSON.parse(xhr.responseText);
+      if(data.results && data.results.length>0){
+        var lat=data.results[0].latitude;
+        var lon=data.results[0].longitude;
+        var name=data.results[0].name + (data.results[0].country? ", "+data.results[0].country:"");
+        getWeather(lat, lon, name);
+      } else { alert("City not found"); }
+    }
+  };
+  xhr.send();
+}
+
+function getWeather(lat, lon, locationName){
+  var xhr=new XMLHttpRequest();
+  xhr.open("GET","https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon+"&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto",true);
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState==4 && xhr.status==200){
+      var data=JSON.parse(xhr.responseText);
+      var cards="";
+      var cw=data.current_weather;
+      var cwType="Unknown", cwIcon="❓";
+      for(var i=0;i<codeMap.length;i++){
+        if(codeMap[i].codes.indexOf(cw.weathercode)!=-1){ cwType=codeMap[i].type; cwIcon=codeMap[i].icon; }
+      }
+      cards+="<div class='weather-card'><h2>Now"+(locationName?" - "+locationName:"")+"</h2>";
+      cards+="<div class='weather-item'><span class='icon'>"+cwIcon+"</span>Temp: "+cw.temperature+"°C</div>";
+      cards+="<div class='weather-item'>Wind: "+cw.windspeed+" km/h</div>";
+      cards+="<div class='weather-item'>Weather: "+cwType+"</div></div>";
+
+      var daily=data.daily;
+      for(var i=0;i<3;i++){
+        var code=daily.weathercode[i], type="Unknown", icon="❓";
+        for(var j=0;j<codeMap.length;j++){
+          if(codeMap[j].codes.indexOf(code)!=-1){ type=codeMap[j].type; icon=codeMap[j].icon; }
+        }
+        cards+="<div class='weather-card'><h2>Day "+(i+1)+"</h2>";
+        cards+="<div class='weather-item'><span class='icon'>"+icon+"</span>Max: "+daily.temperature_2m_max[i]+"°C</div>";
+        cards+="<div class='weather-item'>Min: "+daily.temperature_2m_min[i]+"°C</div>";
+        cards+="<div class='weather-item'>Weather: "+type+"</div></div>";
+      }
+
+      document.getElementById("weatherInfo").innerHTML=cards;
+
+      var temp=cw.temperature;
+      if(temp<=0){ document.body.style.background="linear-gradient(135deg,#2c3e50,#3498db)"; }
+      else if(temp<=20){ document.body.style.background="linear-gradient(135deg,#2980b9,#6dd5fa)"; }
+      else if(temp<=35){ document.body.style.background="linear-gradient(135deg,#ff9966,#ff5e62)"; }
+      else{ document.body.style.background="linear-gradient(135deg,#ff416c,#ff4b2b)"; }
+    }
+  };
+  xhr.send();
+}
+</script>
+
+</body>
+</html>
+<!--
+I used AI for [some of] the CSS part; integrated JS API myself.
+API name is Open-Meteo for reference.
+-->
